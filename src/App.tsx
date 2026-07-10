@@ -1,18 +1,197 @@
-import React, { useState } from 'react';
-import { MapPin, Camera, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin, Camera, AlertTriangle, Loader2 } from 'lucide-react';
 import Login from './Login';
 import CitizenFeed from './CitizenFeed';
 import OfficialDashboard from './OfficialDashboard';
+import ProfileSetup from './ProfileSetup';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'feed' | 'dashboard'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'setup' | 'feed' | 'dashboard'>('landing');
+  const [userRole, setUserRole] = useState<'citizen' | 'official' | 'admin'>('citizen');
+  const [activeWardId, setActiveWardId] = useState<string>('ghatkesar-4');
+  const [userName, setUserName] = useState<string>('Citizen A');
+  const [citizenId, setCitizenId] = useState<string>('');
+  
+  const [authSession, setAuthSession] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loginMode, setLoginMode] = useState<'signin' | 'signup' | 'forgot' | 'reset' | 'expired'>('signin');
+
+  // Handle URL Hash routes (for reset password redirects from Supabase)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash.includes('access_token') && hash.includes('type=recovery')) {
+        setLoginMode('reset');
+        setCurrentView('login');
+      } else if (hash === '#reset') {
+        setLoginMode('reset');
+        setCurrentView('login');
+      } else if (hash === '#feed') {
+        // Protected route handler will trigger if session is active
+        if (!authSession && !authLoading) {
+          window.location.hash = '#login';
+          setCurrentView('login');
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // check on mount
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [authSession, authLoading]);
+
+  // Auth State Listener
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setAuthLoading(false);
+      // Setup default mock ID
+      let id = localStorage.getItem('civicpulse_citizen_id');
+      if (!id) {
+        id = 'citizen_' + Math.random().toString(36).substring(2, 11);
+        localStorage.setItem('civicpulse_citizen_id', id);
+      }
+      setCitizenId(id);
+      return;
+    }
+
+    // Get current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthSession(session);
+      if (session) {
+        fetchUserProfile(session.user.id, session);
+      } else {
+        setAuthLoading(false);
+      }
+    });
+
+    // Listen to Auth State Changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setAuthSession(session);
+      if (event === 'SIGNED_IN' && session) {
+        fetchUserProfile(session.user.id, session);
+      } else if (event === 'SIGNED_OUT') {
+        setAuthSession(null);
+        setCitizenId('');
+        setCurrentView('landing');
+        window.location.hash = '';
+        setAuthLoading(false);
+      } else if (event === 'PASSWORD_RECOVERY') {
+        setLoginMode('reset');
+        setCurrentView('login');
+        window.location.hash = '#reset';
+        setAuthLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Fetch profiles table record
+  const fetchUserProfile = async (userId: string, session: any) => {
+    if (!supabase) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Profile fetch error:', error);
+        // If profile not found, maybe trigger was slow or failed
+        setCurrentView('setup');
+      } else if (data) {
+        setCitizenId(data.id);
+        setUserRole(data.role || 'citizen');
+        setUserName(data.full_name || session?.user?.email?.split('@')[0] || 'User');
+        setActiveWardId(data.ward_id || 'ghatkesar-4');
+
+        // Redirect to setup if profile details are empty
+        if (!data.full_name || !data.mandal) {
+          setCurrentView('setup');
+        } else {
+          setCurrentView(data.role === 'official' ? 'dashboard' : 'feed');
+          window.location.hash = data.role === 'official' ? '#dashboard' : '#feed';
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (supabase && authSession) {
+      await supabase.auth.signOut();
+    } else {
+      // Mock logout
+      setAuthSession(null);
+      setCurrentView('landing');
+      window.location.hash = '';
+    }
+  };
+
+  const handleDemoLogin = (role: 'citizen' | 'official' | 'admin', wardId: string, name: string, demoId?: string) => {
+    setUserRole(role);
+    setActiveWardId(wardId);
+    setUserName(name);
+    setCitizenId(demoId || 'demo_user_id');
+    setCurrentView(role === 'official' ? 'dashboard' : 'feed');
+    window.location.hash = role === 'official' ? '#dashboard' : '#feed';
+  };
+
+  const handleSetupComplete = (profile: { full_name: string; role: 'citizen' | 'official' | 'admin'; ward_id: string }) => {
+    setUserName(profile.full_name);
+    setUserRole(profile.role);
+    setActiveWardId(profile.ward_id || 'ghatkesar-4');
+    setCurrentView(profile.role === 'official' ? 'dashboard' : 'feed');
+    window.location.hash = profile.role === 'official' ? '#dashboard' : '#feed';
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mb-4" />
+        <p className="text-sm font-semibold text-slate-500">Loading your community feed...</p>
+      </div>
+    );
+  }
 
   if (currentView === 'login') {
-    return <Login onLogin={(role) => setCurrentView(role === 'official' ? 'dashboard' : 'feed')} />;
+    return (
+      <Login 
+        initialMode={loginMode}
+        onLogin={handleDemoLogin} 
+      />
+    );
+  }
+
+  if (currentView === 'setup' && authSession) {
+    return (
+      <ProfileSetup 
+        userId={authSession.user.id}
+        onSetupComplete={handleSetupComplete}
+      />
+    );
   }
 
   if (currentView === 'feed') {
-    return <CitizenFeed />;
+    return (
+      <CitizenFeed 
+        userRole={userRole === 'admin' ? 'official' : userRole} // Map admin to official view or custom dashboard if available
+        activeWardId={activeWardId}
+        userName={userName}
+        citizenId={citizenId}
+        onLogout={handleLogout}
+      />
+    );
   }
 
   if (currentView === 'dashboard') {
@@ -30,10 +209,22 @@ function App() {
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={() => setCurrentView('login')} className="hidden sm:block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
+            <button 
+              onClick={() => {
+                setLoginMode('signin');
+                setCurrentView('login');
+              }} 
+              className="hidden sm:block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+            >
               Login
             </button>
-            <button onClick={() => setCurrentView('login')} className="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-full hover:bg-emerald-500 transition-all shadow-sm hover:shadow-md">
+            <button 
+              onClick={() => {
+                setLoginMode('signup');
+                setCurrentView('login');
+              }} 
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-full hover:bg-emerald-500 transition-all shadow-sm hover:shadow-md"
+            >
               Get Started
             </button>
           </div>
@@ -60,7 +251,13 @@ function App() {
           </p>
           
           <div className="mt-12 flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <button onClick={() => setCurrentView('login')} className="relative inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white bg-emerald-600 rounded-full overflow-hidden group shadow-xl hover:shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 animate-pulse hover:animate-none">
+            <button 
+              onClick={() => {
+                setLoginMode('signin');
+                setCurrentView('login');
+              }} 
+              className="relative inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white bg-emerald-600 rounded-full overflow-hidden group shadow-xl hover:shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 animate-pulse hover:animate-none"
+            >
               <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-black"></span>
               <span className="relative">Enter Your Local Feed</span>
             </button>

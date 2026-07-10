@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ClipboardList, AlertCircle, CheckCircle, Camera, ChevronDown } from 'lucide-react';
 
 type IssueStatus = 'Pending' | 'In Progress' | 'Resolved';
