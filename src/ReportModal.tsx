@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { X, Camera } from 'lucide-react';
 
 interface ReportModalProps {
