@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { MapPin, Camera, AlertTriangle, Building, LogOut, User, Shield, ChevronDown } from 'lucide-react';
 import CitizenFeed from './CitizenFeed';
 import OfficialDashboard from './OfficialDashboard';
@@ -15,6 +15,17 @@ function App() {
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const [loginAttemptRole, setLoginAttemptRole] = useState<'citizen' | 'official' | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleAuthSuccess = (userData: UserData) => {
     setCurrentUser(userData);
@@ -43,7 +54,7 @@ function App() {
               )}
             </div>
             
-            <div className="relative">
+            <div className="relative" ref={dropdownRef}>
               <button 
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center gap-2 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors focus:outline-none"
