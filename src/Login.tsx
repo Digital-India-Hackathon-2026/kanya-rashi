@@ -20,6 +20,41 @@ export default function LoginModal({ role, onClose, onSuccess }: LoginModalProps
   const [location, setLocation] = useState('Ghatkesar Ward 4');
   const [adminBadge, setAdminBadge] = useState('');
   const [error, setError] = useState('');
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+
+  const fetchLiveLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setIsDetectingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          if (!res.ok) throw new Error('Failed to fetch location data');
+          const data = await res.json();
+          
+          const address = data.address || {};
+          const readableLocation = address.suburb || address.city_district || address.city || address.county || 'Unknown Location';
+          
+          setLocation(readableLocation);
+        } catch (err) {
+          console.error(err);
+          alert('Could not determine readable location from coordinates.');
+        } finally {
+          setIsDetectingLocation(false);
+        }
+      },
+      (error) => {
+        console.error(error);
+        setIsDetectingLocation(false);
+        alert('Location access denied or unavailable. Please allow location permissions.');
+      }
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,15 +168,25 @@ export default function LoginModal({ role, onClose, onSuccess }: LoginModalProps
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               {isCitizen ? 'Community Location' : 'Assigned Ward / District'}
             </label>
-            <select
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className={`w-full appearance-none px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 ${colorClasses.focusBorder} focus:outline-none focus:ring-2 ${colorClasses.focusRingLight} shadow-sm transition-all`}
-            >
-              <option value="Ghatkesar Ward 4">Ghatkesar Ward 4</option>
-              <option value="Malkajgiri Ward 2">Malkajgiri Ward 2</option>
-              <option value="Kapra Ward 1">Kapra Ward 1</option>
-            </select>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                readOnly
+                value={location}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-sm text-slate-900 shadow-sm transition-all outline-none"
+                placeholder="Location..."
+              />
+              <button
+                type="button"
+                onClick={fetchLiveLocation}
+                disabled={isDetectingLocation}
+                className={`px-4 py-2.5 whitespace-nowrap rounded-xl text-sm font-bold text-white transition-all shadow-sm flex items-center justify-center gap-1 ${
+                  isDetectingLocation ? 'bg-slate-400 cursor-wait' : colorClasses.bg + ' ' + colorClasses.hoverBg
+                }`}
+              >
+                {isDetectingLocation ? '⏳ Detecting...' : '📍 Detect My Location'}
+              </button>
+            </div>
           </div>
 
           {!isCitizen && (
