@@ -2,16 +2,21 @@ import React, { useState } from 'react';
 import { MapPin, Camera, AlertTriangle } from 'lucide-react';
 import Login from './Login';
 import CitizenFeed from './CitizenFeed';
+import OfficialDashboard from './OfficialDashboard';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'feed'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'feed' | 'dashboard'>('landing');
 
   if (currentView === 'login') {
-    return <Login onLogin={() => setCurrentView('feed')} />;
+    return <Login onLogin={(role) => setCurrentView(role === 'official' ? 'dashboard' : 'feed')} />;
   }
 
   if (currentView === 'feed') {
     return <CitizenFeed />;
+  }
+
+  if (currentView === 'dashboard') {
+    return <OfficialDashboard />;
   }
 
   return (

@@ -1,5 +1,6 @@
-import React from 'react';
-import { X, Camera } from 'lucide-react';
+import React, { useState, useRef, useCallback } from 'react';
+import { X } from 'lucide-react';
+import Webcam from 'react-webcam';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -7,6 +8,23 @@ interface ReportModalProps {
 }
 
 export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const webcamRef = useRef<Webcam>(null);
+
+  const capture = useCallback(() => {
+    const imageSrc = webcamRef.current?.getScreenshot();
+    if (imageSrc) {
+      setCapturedImage(imageSrc);
+    }
+  }, [webcamRef]);
+
+  const retake = () => {
+    setCapturedImage(null);
+  };
+
+  // Ensure modal state resets when closed if desired, 
+  // but keeping it simple as per instructions.
+  
   if (!isOpen) return null;
 
   return (
@@ -27,18 +45,40 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1 space-y-5">
           
-          {/* Hardware Camera Integration */}
+          {/* Live Webcam Camera Integration */}
           <div>
-            <label className="block w-full border-2 border-dashed border-emerald-500 bg-emerald-50 hover:bg-emerald-100 transition-colors rounded-xl p-8 cursor-pointer flex flex-col items-center justify-center text-center group">
-              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-3 group-hover:scale-110 transition-transform">
-                <Camera className="w-6 h-6 text-emerald-600" />
-              </div>
-              <span className="text-sm font-bold text-emerald-700">Tap to Capture Live Photo</span>
-              <span className="text-xs font-medium text-emerald-600/80 mt-1">(Camera Mode Enforced)</span>
-              
-              {/* The crucial hidden input forcing hardware camera */}
-              <input type="file" accept="image/*" capture="environment" className="hidden" />
-            </label>
+            <div className="w-full border-2 border-dashed border-emerald-500 bg-emerald-50 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+              {!capturedImage ? (
+                <>
+                  <div className="w-full rounded-xl overflow-hidden bg-black shadow-sm mb-3">
+                    <Webcam
+                      audio={false}
+                      ref={webcamRef}
+                      screenshotFormat="image/jpeg"
+                      className="w-full h-48 object-cover"
+                    />
+                  </div>
+                  <button 
+                    onClick={capture}
+                    className="px-5 py-2 bg-white border border-emerald-200 text-emerald-700 font-bold rounded-lg shadow-sm hover:bg-emerald-50 transition-colors flex items-center gap-2 active:scale-95"
+                  >
+                    <span>📸</span> Snap Photo
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="w-full rounded-xl overflow-hidden shadow-sm mb-3">
+                    <img src={capturedImage} alt="Captured" className="w-full h-48 object-cover" />
+                  </div>
+                  <button 
+                    onClick={retake}
+                    className="px-5 py-2 bg-white border border-emerald-200 text-emerald-700 font-bold rounded-lg shadow-sm hover:bg-emerald-50 transition-colors flex items-center gap-2 active:scale-95"
+                  >
+                    <span>🔄</span> Retake Photo
+                  </button>
+                </>
+              )}
+            </div>
             
             {/* Anti-Spoofing GPS Badge */}
             <div className="mt-3 bg-emerald-100 text-emerald-800 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm border border-emerald-200">

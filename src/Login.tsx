@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, Shield, ChevronDown } from 'lucide-react';
 
-export default function Login({ onLogin }: { onLogin: () => void }) {
+export default function Login({ onLogin }: { onLogin: (role: 'citizen' | 'official') => void }) {
   const [role, setRole] = useState<'citizen' | 'official'>('citizen');
 
   return (
@@ -113,7 +113,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
 
           {/* Submit Action */}
           <button 
-            onClick={onLogin}
+            onClick={() => onLogin(role)}
             className="w-full px-4 py-3.5 text-base font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-500 active:scale-[0.98] transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
           >
             Enter Community Feed
