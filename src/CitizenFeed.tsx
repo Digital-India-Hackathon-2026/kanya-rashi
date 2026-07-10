@@ -38,6 +38,33 @@ export default function CitizenFeed() {
     }
   };
 
+  const handleSubmitIssue = async (data: { title: string; category: string; description: string }) => {
+    try {
+      await fetch('http://localhost:5000/api/issues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: data.title,
+          category: data.category,
+          description: data.description,
+          location: "SNIST Campus / Ghatkesar Ward 4",
+          status: "Pending",
+          upvotes: 0
+        })
+      });
+      fetchIssues(); // Refresh feed immediately
+      setIsModalOpen(false); // Close modal
+    } catch (err) {
+      console.error("Failed to submit issue", err);
+    }
+  };
+
+  const totalIssues = issues.length;
+  const resolvedIssues = issues.filter(issue => issue.status === 'Resolved').length;
+  const resolutionRate = totalIssues > 0 ? Math.round((resolvedIssues / totalIssues) * 100) : 0;
+  
+  const highestUpvotedIssue = totalIssues > 0 ? [...issues].sort((a, b) => b.upvotes - a.upvotes)[0] : null;
+
   return (
     <div className="bg-slate-50 font-sans text-slate-900 pb-24 relative min-h-screen">
       
@@ -157,10 +184,10 @@ export default function CitizenFeed() {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-slate-600">Resolution Rate</span>
-                    <span className="text-sm font-bold text-emerald-600">78%</span>
+                    <span className="text-sm font-bold text-emerald-600">{resolutionRate}%</span>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: '78%' }}></div>
+                    <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${resolutionRate}%` }}></div>
                   </div>
                 </div>
                 
@@ -181,23 +208,22 @@ export default function CitizenFeed() {
               </div>
               
               <div className="space-y-4">
-                <div className="p-4 bg-red-50 rounded-lg border border-red-100 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-red-500 opacity-5 rounded-bl-full"></div>
-                  <h4 className="font-bold text-slate-900 text-sm mb-2">Main Approach Road Potholes</h4>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md">842 Upvotes</span>
+                {!highestUpvotedIssue ? (
+                  <p className="text-sm text-slate-500 italic">No issues reported yet.</p>
+                ) : (
+                  <div className="p-4 bg-red-50 rounded-lg border border-red-100 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-red-500 opacity-5 rounded-bl-full"></div>
+                    <h4 className="font-bold text-slate-900 text-sm mb-2">{highestUpvotedIssue.title}</h4>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2.5 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-md">{highestUpvotedIssue.upvotes} Upvotes</span>
+                    </div>
+                    {highestUpvotedIssue.upvotes > 50 && (
+                      <p className="text-xs font-semibold text-red-600/90 leading-tight">
+                        Warning: Reaching critical mass for Ward 4 representative.
+                      </p>
+                    )}
                   </div>
-                  <p className="text-xs font-semibold text-red-600/90 leading-tight">
-                    Warning: Reaching critical mass for Ward 4 representative.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors cursor-pointer">
-                  <h4 className="font-bold text-slate-900 text-sm mb-2">Water Shortage in Block B</h4>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-md">512 Upvotes</span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -243,7 +269,7 @@ export default function CitizenFeed() {
         <span className="text-xl leading-none">➕</span> REPORT NEW ISSUE
       </button>
 
-      <ReportModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <ReportModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleSubmitIssue} />
     </div>
   );
 }

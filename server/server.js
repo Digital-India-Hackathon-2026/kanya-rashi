@@ -9,32 +9,7 @@ app.use(cors());
 app.use(express.json()); // Essential for parsing JSON request bodies
 
 // In-Memory Database (Hackathon Speed)
-let issuesDB = [
-  { 
-    id: 1, 
-    title: "Broken street light near C-Block", 
-    category: "Electrical", 
-    location: "SNIST Campus / Ghatkesar", 
-    status: "Pending", 
-    upvotes: 12 
-  },
-  { 
-    id: 2, 
-    title: "Water leak in main pipeline", 
-    category: "Water Supply", 
-    location: "Ghatkesar Ward 4", 
-    status: "In Progress", 
-    upvotes: 58 
-  },
-  { 
-    id: 3, 
-    title: "Deep Pothole Causing Accidents", 
-    category: "Road Damage", 
-    location: "Main Approach Road", 
-    status: "Pending", 
-    upvotes: 84 
-  }
-];
+let issuesDB = [];
 
 // Generate simple unique IDs
 let nextId = 4;

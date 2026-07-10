@@ -1,31 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ClipboardList, AlertCircle, CheckCircle, Camera, ChevronDown } from 'lucide-react';
 
 type IssueStatus = 'Pending' | 'In Progress' | 'Resolved';
 
 interface Issue {
-  id: string;
-  date: string;
+  id: string | number;
+  date?: string;
   category: string;
   title: string;
   location: string;
   status: IssueStatus;
 }
 
-const INITIAL_ISSUES: Issue[] = [
-  { id: 'REP-001', date: '2026-07-10', category: 'Electrical', title: 'Broken street light near C-Block', location: 'SNIST Campus', status: 'Pending' },
-  { id: 'REP-002', date: '2026-07-09', category: 'Water', title: 'Water leak in main pipeline', location: 'Ghatkesar Ward 4', status: 'In Progress' },
-  { id: 'REP-003', date: '2026-07-08', category: 'Roads', title: 'Pothole on main approach road', location: 'SNIST Campus', status: 'Resolved' },
-];
-
 export default function OfficialDashboard() {
-  const [issues, setIssues] = useState<Issue[]>(INITIAL_ISSUES);
+  const [issues, setIssues] = useState<Issue[]>([]);
 
-  const updateIssueStatus = (id: string, newStatus: IssueStatus) => {
-    setIssues(issues.map(issue => 
-      issue.id === id ? { ...issue, status: newStatus } : issue
-    ));
+  const fetchIssues = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/issues');
+      const data = await res.json();
+      setIssues(data);
+    } catch (err) {
+      console.error("Failed to fetch issues", err);
+    }
   };
+
+  useEffect(() => {
+    fetchIssues();
+  }, []);
+
+  const handleStatusChange = async (id: string | number, newStatus: IssueStatus) => {
+    try {
+      await fetch(`http://localhost:5000/api/issues/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      fetchIssues(); // Refresh dashboard
+    } catch (err) {
+      console.error("Failed to update status", err);
+    }
+  };
+
+  const totalReports = issues.length;
+  const pendingCount = issues.filter(issue => issue.status === 'Pending').length;
+  const resolvedCount = issues.filter(issue => issue.status === 'Resolved').length;
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
@@ -62,7 +81,7 @@ export default function OfficialDashboard() {
             </div>
             <div>
               <p className="text-sm font-medium text-slate-500">Total Reports</p>
-              <p className="text-3xl font-bold text-slate-900">124</p>
+              <p className="text-3xl font-bold text-slate-900">{totalReports}</p>
             </div>
           </div>
           
@@ -73,7 +92,7 @@ export default function OfficialDashboard() {
             </div>
             <div>
               <p className="text-sm font-medium text-slate-500">Pending Action</p>
-              <p className="text-3xl font-bold text-red-600">18</p>
+              <p className="text-3xl font-bold text-red-600">{pendingCount}</p>
             </div>
           </div>
 
@@ -83,8 +102,8 @@ export default function OfficialDashboard() {
               <CheckCircle className="w-8 h-8" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Resolved this Month</p>
-              <p className="text-3xl font-bold text-green-600">106</p>
+              <p className="text-sm font-medium text-slate-500">Resolved</p>
+              <p className="text-3xl font-bold text-green-600">{resolvedCount}</p>
             </div>
           </div>
         </div>
@@ -110,8 +129,8 @@ export default function OfficialDashboard() {
                 {issues.map((issue) => (
                   <tr key={issue.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-slate-900">{issue.id}</div>
-                      <div className="text-xs text-slate-400 mt-1">{issue.date}</div>
+                      <div className="font-medium text-slate-900">REP-{issue.id}</div>
+                      <div className="text-xs text-slate-400 mt-1">Today</div>
                     </td>
                     <td className="px-6 py-4 min-w-[200px]">
                       <div className="font-bold text-slate-800">{issue.title}</div>
@@ -128,7 +147,7 @@ export default function OfficialDashboard() {
                       <div className="relative inline-block w-40">
                         <select
                           value={issue.status}
-                          onChange={(e) => updateIssueStatus(issue.id, e.target.value as IssueStatus)}
+                          onChange={(e) => handleStatusChange(issue.id, e.target.value as IssueStatus)}
                           className={`w-full appearance-none px-3 py-2 pr-8 rounded-lg border text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm cursor-pointer transition-colors
                             ${issue.status === 'Pending' ? 'bg-red-50 text-red-700 border-red-200' : ''}
                             ${issue.status === 'In Progress' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : ''}

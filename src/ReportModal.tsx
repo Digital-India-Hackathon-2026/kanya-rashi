@@ -5,10 +5,22 @@ import Webcam from 'react-webcam';
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit: (data: { title: string; category: string; description: string }) => void;
 }
 
-export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
+export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [category, setCategory] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+
+  const handleFormSubmit = () => {
+    onSubmit({ title, category, description });
+    setCategory('');
+    setTitle('');
+    setDescription('');
+    setCapturedImage(null);
+  };
   const webcamRef = useRef<Webcam>(null);
 
   const capture = useCallback(() => {
@@ -94,8 +106,9 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
               </label>
               <select
                 id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
                 className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
-                defaultValue=""
               >
                 <option value="" disabled>Select a category...</option>
                 <option value="road">Road Damage</option>
@@ -112,6 +125,8 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
               <input
                 id="title"
                 type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="E.g. Broken street light on Main St."
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
               />
@@ -124,6 +139,8 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
               <textarea
                 id="description"
                 rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Provide additional details about the exact location and severity..."
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm resize-none"
               ></textarea>
@@ -134,7 +151,7 @@ export default function ReportModal({ isOpen, onClose }: ReportModalProps) {
         {/* Footer Action */}
         <div className="p-6 pt-2 border-t border-slate-100 bg-slate-50">
           <button 
-            onClick={onClose}
+            onClick={handleFormSubmit}
             className="w-full px-4 py-3.5 text-base font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-500 active:scale-[0.98] transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
           >
             Submit Verified Issue
