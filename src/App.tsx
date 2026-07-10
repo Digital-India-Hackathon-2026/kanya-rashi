@@ -1,41 +1,66 @@
 import React, { useState } from 'react';
-import { MapPin, Camera, AlertTriangle } from 'lucide-react';
-import Login from './Login';
+import { MapPin, Camera, AlertTriangle, Building, LogOut, User, Shield } from 'lucide-react';
 import CitizenFeed from './CitizenFeed';
 import OfficialDashboard from './OfficialDashboard';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'landing' | 'login' | 'feed' | 'dashboard'>('landing');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<'citizen' | 'official' | null>(null);
 
-  if (currentView === 'login') {
-    return <Login onLogin={(role) => setCurrentView(role === 'official' ? 'dashboard' : 'feed')} />;
+  const handleLogin = (role: 'citizen' | 'official') => {
+    setIsLoggedIn(true);
+    setUserRole(role);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserRole(null);
+  };
+
+  // ------------------------------------------------------------------
+  // LOGGED IN VIEW (Global Nav + Role Dashboard)
+  // ------------------------------------------------------------------
+  if (isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+        {/* Global Navigation Bar */}
+        <nav className="fixed top-0 w-full z-50 bg-white shadow-sm border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building className="w-6 h-6 text-slate-700" />
+              <span className="text-xl font-bold tracking-tight">CivicPulse</span>
+            </div>
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          </div>
+        </nav>
+
+        {/* Main Content Area */}
+        <div className="pt-16">
+          {userRole === 'citizen' && <CitizenFeed />}
+          {userRole === 'official' && <OfficialDashboard />}
+        </div>
+      </div>
+    );
   }
 
-  if (currentView === 'feed') {
-    return <CitizenFeed />;
-  }
-
-  if (currentView === 'dashboard') {
-    return <OfficialDashboard />;
-  }
-
+  // ------------------------------------------------------------------
+  // LOGGED OUT VIEW (Restored Landing Page + Role Buttons)
+  // ------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-emerald-200">
-      {/* Navbar */}
+      {/* Landing Navbar */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl font-bold tracking-tight text-slate-900">
               🏛️ CivicPulse
             </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <button onClick={() => setCurrentView('login')} className="hidden sm:block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
-              Login
-            </button>
-            <button onClick={() => setCurrentView('login')} className="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-full hover:bg-emerald-500 transition-all shadow-sm hover:shadow-md">
-              Get Started
-            </button>
           </div>
         </div>
       </nav>
@@ -59,10 +84,21 @@ function App() {
             The first civic platform that maps real community grievances directly to local electoral boundaries. Hold your Ward Corporators and Sarpanches instantly accountable.
           </p>
           
-          <div className="mt-12 flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <button onClick={() => setCurrentView('login')} className="relative inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white bg-emerald-600 rounded-full overflow-hidden group shadow-xl hover:shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 animate-pulse hover:animate-none">
-              <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-black"></span>
-              <span className="relative">Enter Your Local Feed</span>
+          {/* Role-Based Login Buttons (Replaces previous CTA) */}
+          <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button 
+              onClick={() => handleLogin('citizen')}
+              className="flex items-center justify-center gap-3 px-8 py-4 text-base font-bold text-white bg-emerald-600 rounded-full hover:bg-emerald-500 active:scale-95 transition-all shadow-xl hover:shadow-emerald-500/20"
+            >
+              <User className="w-5 h-5" />
+              Login as Citizen
+            </button>
+            <button 
+              onClick={() => handleLogin('official')}
+              className="flex items-center justify-center gap-3 px-8 py-4 text-base font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-500 active:scale-95 transition-all shadow-xl hover:shadow-indigo-500/20"
+            >
+              <Shield className="w-5 h-5" />
+              Login as Official
             </button>
           </div>
         </section>
