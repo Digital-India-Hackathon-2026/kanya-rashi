@@ -11,6 +11,7 @@ interface Issue {
   upvotes: number;
   image?: string;
   resolutionEvidence?: string;
+  created_at?: string;
 }
 
 interface CitizenFeedProps {
@@ -20,6 +21,11 @@ interface CitizenFeedProps {
 export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFeedProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [votedIssueIds, setVotedIssueIds] = useState<number[]>([]);
+  const [activeTab, setActiveTab] = useState<'most_upvoted' | 'recent' | 'resolved'>('most_upvoted');
+  
+  // Mock current user for the hackathon
+  const currentUser = { email: "citizen@example.com" };
 
   const fetchIssues = async () => {
     try {
@@ -37,7 +43,22 @@ export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFe
 
   const handleUpvote = async (id: number) => {
     try {
-      await fetch(`http://localhost:5000/api/issues/${id}/upvote`, { method: 'POST' });
+      const res = await fetch(`http://localhost:5000/api/issues/${id}/upvote`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userEmail: currentUser.email })
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        if (res.status === 400 && errorData.error === 'You have already upvoted this issue.') {
+          setVotedIssueIds(prev => [...prev, id]);
+        }
+        alert(errorData.error || "Failed to upvote");
+        return;
+      }
+      
+      setVotedIssueIds(prev => [...prev, id]);
       fetchIssues(); // Refresh UI after upvote
     } catch (err) {
       console.error("Failed to upvote", err);
@@ -76,6 +97,18 @@ export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFe
     .filter(issue => issue.status !== 'Resolved')
     .reduce((sum, issue) => sum + issue.upvotes, 0);
 
+  const displayedIssues = [...issues].filter(issue => {
+    if (activeTab === 'resolved') return issue.status === 'Resolved';
+    return true;
+  }).sort((a, b) => {
+    if (activeTab === 'most_upvoted') {
+      return b.upvotes - a.upvotes;
+    } else if (activeTab === 'recent') {
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    }
+    return 0;
+  });
+
   return (
     <div className="bg-gradient-to-br from-slate-50 to-slate-100 font-sans text-slate-900 pb-24 relative min-h-screen">
       
@@ -111,42 +144,54 @@ export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFe
 
             {/* Filter Tabs */}
             <div className="flex items-center gap-6 border-b border-slate-200 mb-6">
-              <button className="pb-3 text-emerald-600 font-bold border-b-2 border-emerald-600 text-sm transition-colors">
+              <button 
+                onClick={() => setActiveTab('most_upvoted')}
+                className={`pb-3 text-sm transition-colors font-bold ${activeTab === 'most_upvoted' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 border-b-2 border-transparent hover:text-slate-700 hover:border-slate-300'}`}>
                 🔥 Most Upvoted
               </button>
-              <button className="pb-3 text-slate-500 font-medium hover:text-slate-700 text-sm transition-colors border-b-2 border-transparent hover:border-slate-300">
+              <button 
+                onClick={() => setActiveTab('recent')}
+                className={`pb-3 text-sm transition-colors font-bold ${activeTab === 'recent' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 border-b-2 border-transparent hover:text-slate-700 hover:border-slate-300'}`}>
                 🕒 Recent
               </button>
-              <button className="pb-3 text-slate-500 font-medium hover:text-slate-700 text-sm transition-colors border-b-2 border-transparent hover:border-slate-300">
+              <button 
+                onClick={() => setActiveTab('resolved')}
+                className={`pb-3 text-sm transition-colors font-bold ${activeTab === 'resolved' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-slate-500 border-b-2 border-transparent hover:text-slate-700 hover:border-slate-300'}`}>
                 ✅ Resolved
               </button>
             </div>
 
             {/* Issue Cards */}
             <div className="space-y-4">
-              {issues.length === 0 ? (
+              {displayedIssues.length === 0 ? (
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-16 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-md hover:-translate-y-1">
                   <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mb-6 border border-emerald-100">
                     <Map className="w-10 h-10 text-emerald-500" />
                   </div>
                   <h3 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">All clear!</h3>
                   <p className="text-slate-500 max-w-md text-base leading-relaxed">
-                    No issues reported yet. Be the first to make a difference in your community by reporting an issue.
+                    No issues found for this filter.
                   </p>
                 </div>
               ) : (
-                issues.map((issue) => {
+                displayedIssues.map((issue) => {
                   let borderClass = '';
                   let ButtonComponent;
 
                   if (issue.status === 'Pending') {
+                  const hasVoted = votedIssueIds.includes(issue.id);
                   borderClass = 'border-red-500';
                   ButtonComponent = (
                     <button 
                       onClick={() => handleUpvote(issue.id)}
-                      className="w-full sm:w-auto px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg shadow-sm hover:bg-emerald-500 transition-colors flex items-center justify-center gap-2 active:scale-95"
+                      disabled={hasVoted}
+                      className={`w-full sm:w-auto px-4 py-2 font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 active:scale-95 ${
+                        hasVoted 
+                          ? 'bg-slate-200 text-slate-500 cursor-not-allowed' 
+                          : 'bg-emerald-600 text-white hover:bg-emerald-500'
+                      }`}
                     >
-                      <span className="text-xs">▲</span> UPVOTE <span className="opacity-50">|</span> {issue.upvotes}
+                      <span className="text-xs">▲</span> {hasVoted ? 'UPVOTED' : 'UPVOTE'} <span className="opacity-50">|</span> {issue.upvotes}
                     </button>
                   );
                 } else if (issue.status === 'In Progress') {
