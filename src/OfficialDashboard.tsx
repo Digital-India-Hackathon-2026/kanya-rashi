@@ -43,7 +43,7 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
     if (!resolvingIssueId || !evidenceFile) return;
 
     try {
-      await fetch(`http://localhost:5000/api/issues/${resolvingIssueId}/status`, {
+      await fetch(`https://kanya-rashi.onrender.com/api/issues/${resolvingIssueId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'Resolved', resolutionEvidence: evidenceFile })
@@ -58,7 +58,7 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
 
   const fetchIssues = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/issues');
+      const res = await fetch('https://kanya-rashi.onrender.com/api/issues');
       const data = await res.json();
       setIssues(data);
     } catch (err) {
@@ -79,7 +79,7 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
     }
 
     try {
-      await fetch(`http://localhost:5000/api/issues/${id}/status`, {
+      await fetch(`https://kanya-rashi.onrender.com/api/issues/${id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
@@ -115,7 +115,7 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
               <p className="text-3xl font-bold text-slate-900">{totalReports}</p>
             </div>
           </div>
-          
+
           {/* Pending Action */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex items-center gap-4">
             <div className="p-3 bg-red-100 rounded-lg text-red-600">
@@ -158,7 +158,7 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
               <ChevronDown className="absolute right-2.5 top-2 w-4 h-4 text-slate-500 pointer-events-none" />
             </div>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
@@ -250,7 +250,7 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
       {resolvingIssueId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col p-6 relative border border-slate-200">
-            <button 
+            <button
               onClick={() => { setResolvingIssueId(null); setEvidenceFile(null); }}
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors font-bold"
             >
@@ -258,7 +258,7 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
             </button>
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Upload Proof of Resolution</h2>
             <p className="text-sm text-slate-500 mb-6">Photographic evidence is required to mark an issue as Resolved and notify citizens.</p>
-            
+
             <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center min-h-[200px] mb-6 relative overflow-hidden bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer">
               {evidenceFile ? (
                 <img src={evidenceFile} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
@@ -269,10 +269,10 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
                   <span className="text-xs text-slate-400">JPG, PNG up to 10MB</span>
                 </>
               )}
-              <input 
-                type="file" 
-                accept="image/*" 
-                onChange={handleFileChange} 
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
               />
             </div>
