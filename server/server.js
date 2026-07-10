@@ -24,7 +24,37 @@ app.get('/api/issues', async (req, res) => {
       .order('created_at', { ascending: false });
       
     if (error) throw error;
-    res.json(data);
+    
+    // Check for escalations (Hackathon Demo Speed)
+    const now = Date.now();
+    
+    const updatedData = [...data];
+    
+    for (let i = 0; i < updatedData.length; i++) {
+      const issue = updatedData[i];
+      if (issue.status !== 'Resolved') {
+        const createdDate = new Date(issue.created_at).getTime();
+        const diffMinutes = (now - createdDate) / (60 * 1000);
+        
+        let newLevel = 1;
+        if (diffMinutes > 6) newLevel = 4;
+        else if (diffMinutes > 4) newLevel = 3;
+        else if (diffMinutes > 2) newLevel = 2;
+        
+        const currentLevel = issue.escalation_level || 1;
+        
+        if (newLevel > currentLevel) {
+          issue.escalation_level = newLevel;
+          // Update database
+          await supabase
+            .from('issues')
+            .update({ escalation_level: newLevel })
+            .eq('id', issue.id);
+        }
+      }
+    }
+    
+    res.json(updatedData);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

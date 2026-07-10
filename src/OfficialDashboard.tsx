@@ -10,6 +10,7 @@ interface Issue {
   title: string;
   location: string;
   status: IssueStatus;
+  escalation_level?: number;
 }
 
 interface OfficialDashboardProps {
@@ -25,6 +26,7 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
   const [issues, setIssues] = useState<Issue[]>([]);
   const [resolvingIssueId, setResolvingIssueId] = useState<string | number | null>(null);
   const [evidenceFile, setEvidenceFile] = useState<string | null>(null);
+  const [filterLevel, setFilterLevel] = useState<number | 'all'>('all');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,6 +68,8 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
 
   useEffect(() => {
     fetchIssues();
+    const interval = setInterval(fetchIssues, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleStatusChange = async (id: string | number, newStatus: IssueStatus) => {
@@ -137,8 +141,22 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
 
         {/* Issue Management Table */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center">
+          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-lg font-semibold text-slate-800">Incoming Verified Issues</h2>
+            <div className="relative">
+              <select
+                value={filterLevel}
+                onChange={(e) => setFilterLevel(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                className="appearance-none pl-3 pr-8 py-1.5 bg-white border border-slate-300 rounded-md text-sm font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              >
+                <option value="all">All Levels</option>
+                <option value={1}>Level 1 (Ward)</option>
+                <option value={2}>Level 2 (Village)</option>
+                <option value={3}>Level 3 (Mandal)</option>
+                <option value={4}>Level 4 (District)</option>
+              </select>
+              <ChevronDown className="absolute right-2.5 top-2 w-4 h-4 text-slate-500 pointer-events-none" />
+            </div>
           </div>
           
           <div className="overflow-x-auto">
@@ -153,14 +171,36 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {issues.map((issue) => (
+                {issues.filter(issue => filterLevel === 'all' || (issue.escalation_level || 1) === filterLevel).map((issue) => (
                   <tr key={issue.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="font-medium text-slate-900">REP-{issue.id}</div>
                       <div className="text-xs text-slate-400 mt-1">Today</div>
                     </td>
                     <td className="px-6 py-4 min-w-[200px]">
-                      <div className="font-bold text-slate-800">{issue.title}</div>
+                      <div className="font-bold text-slate-800 flex items-center flex-wrap gap-2">
+                        {issue.title}
+                        {(!issue.escalation_level || issue.escalation_level === 1) && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">
+                            Level 1: Ward
+                          </span>
+                        )}
+                        {issue.escalation_level === 2 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                            Level 2: Village
+                          </span>
+                        )}
+                        {issue.escalation_level === 3 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+                            Level 3: Mandal
+                          </span>
+                        )}
+                        {issue.escalation_level === 4 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                            Level 4: District ⚠️
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs font-medium bg-slate-100 text-slate-600 inline-block px-2 py-0.5 rounded mt-1 border border-slate-200">
                         {issue.category}
                       </div>

@@ -87,17 +87,19 @@ export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFe
     }
   };
 
-  const totalIssues = issues.length;
-  const resolvedIssues = issues.filter(issue => issue.status === 'Resolved').length;
+  const localIssues = issues.filter(issue => issue.location === location);
+
+  const totalIssues = localIssues.length;
+  const resolvedIssues = localIssues.filter(issue => issue.status === 'Resolved').length;
   const resolutionRate = totalIssues > 0 ? Math.round((resolvedIssues / totalIssues) * 100) : 0;
   
-  const highestUpvotedIssue = totalIssues > 0 ? [...issues].sort((a, b) => b.upvotes - a.upvotes)[0] : null;
+  const highestUpvotedIssue = totalIssues > 0 ? [...localIssues].sort((a, b) => b.upvotes - a.upvotes)[0] : null;
 
-  const alienatedVoters = issues
+  const alienatedVoters = localIssues
     .filter(issue => issue.status !== 'Resolved')
     .reduce((sum, issue) => sum + issue.upvotes, 0);
 
-  const displayedIssues = [...issues].filter(issue => {
+  const displayedIssues = [...localIssues].filter(issue => {
     if (activeTab === 'resolved') return issue.status === 'Resolved';
     return true;
   }).sort((a, b) => {
@@ -132,7 +134,7 @@ export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFe
             <div className="bg-red-50 border-l-4 border-red-500 rounded-r-2xl p-5 mb-8 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-red-800 font-bold flex items-center gap-2 text-lg">
-                  <span>⚠️</span> Ward 4 Political Capital Risk
+                  <span>⚠️</span> {location} Political Capital Risk
                 </h2>
                 <p className="text-red-600/80 text-sm mt-1 font-medium">Accumulated unresolved grievances.</p>
               </div>
@@ -170,7 +172,7 @@ export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFe
                   </div>
                   <h3 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">All clear!</h3>
                   <p className="text-slate-500 max-w-md text-base leading-relaxed">
-                    No issues found for this filter.
+                    No issues found in {location} for this filter. Be the first to report an issue in your area!
                   </p>
                 </div>
               ) : (
@@ -302,7 +304,7 @@ export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFe
                     </div>
                     {highestUpvotedIssue.upvotes > 50 && (
                       <p className="text-xs font-semibold text-red-600/90 leading-tight">
-                        Warning: Reaching critical mass for Ward 4 representative.
+                        Warning: Reaching critical mass for {location} representative.
                       </p>
                     )}
                   </div>
