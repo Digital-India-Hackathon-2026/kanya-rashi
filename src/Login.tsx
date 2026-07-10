@@ -40,7 +40,7 @@ export default function LoginModal({ role, onClose, onSuccess }: LoginModalProps
       name,
       email,
       role,
-      location: role === 'citizen' ? location : undefined
+      location: location
     });
   };
 
@@ -129,20 +129,20 @@ export default function LoginModal({ role, onClose, onSuccess }: LoginModalProps
             </div>
           </div>
 
-          {isCitizen && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Community Location</label>
-              <select
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className={`w-full appearance-none px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 ${colorClasses.focusBorder} focus:outline-none focus:ring-2 ${colorClasses.focusRingLight} shadow-sm transition-all`}
-              >
-                <option value="Ghatkesar Ward 4">Ghatkesar Ward 4</option>
-                <option value="Malkajgiri Ward 2">Malkajgiri Ward 2</option>
-                <option value="Kapra Ward 1">Kapra Ward 1</option>
-              </select>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              {isCitizen ? 'Community Location' : 'Assigned Ward / District'}
+            </label>
+            <select
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className={`w-full appearance-none px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 ${colorClasses.focusBorder} focus:outline-none focus:ring-2 ${colorClasses.focusRingLight} shadow-sm transition-all`}
+            >
+              <option value="Ghatkesar Ward 4">Ghatkesar Ward 4</option>
+              <option value="Malkajgiri Ward 2">Malkajgiri Ward 2</option>
+              <option value="Kapra Ward 1">Kapra Ward 1</option>
+            </select>
+          </div>
 
           {!isCitizen && (
             <div>

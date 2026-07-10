@@ -38,6 +38,9 @@ function App() {
             <div className="flex items-center gap-2">
               <Building className="w-6 h-6 text-slate-700" />
               <span className="text-xl font-bold tracking-tight">CivicPulse</span>
+              {currentUser.role === 'official' && (
+                <span className="ml-3 px-2 py-1 bg-indigo-100 text-indigo-800 text-[10px] uppercase font-bold tracking-wider rounded-full">Official Portal</span>
+              )}
             </div>
             
             <div className="relative">
@@ -81,7 +84,7 @@ function App() {
         {/* Main Content Area */}
         <div className="pt-16">
           {currentUser.role === 'citizen' && <CitizenFeed location={currentUser.location} />}
-          {currentUser.role === 'official' && <OfficialDashboard />}
+          {currentUser.role === 'official' && <OfficialDashboard currentUser={currentUser} />}
         </div>
       </div>
     );

@@ -12,8 +12,47 @@ interface Issue {
   status: IssueStatus;
 }
 
-export default function OfficialDashboard() {
+interface OfficialDashboardProps {
+  currentUser?: {
+    name: string;
+    email: string;
+    role: string;
+    location?: string;
+  };
+}
+
+export default function OfficialDashboard({ currentUser }: OfficialDashboardProps) {
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [resolvingIssueId, setResolvingIssueId] = useState<string | number | null>(null);
+  const [evidenceFile, setEvidenceFile] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEvidenceFile(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const submitResolution = async () => {
+    if (!resolvingIssueId || !evidenceFile) return;
+
+    try {
+      await fetch(`http://localhost:5000/api/issues/${resolvingIssueId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Resolved', resolutionEvidence: evidenceFile })
+      });
+      setResolvingIssueId(null);
+      setEvidenceFile(null);
+      fetchIssues();
+    } catch (err) {
+      console.error("Failed to submit resolution", err);
+    }
+  };
 
   const fetchIssues = async () => {
     try {
@@ -30,6 +69,11 @@ export default function OfficialDashboard() {
   }, []);
 
   const handleStatusChange = async (id: string | number, newStatus: IssueStatus) => {
+    if (newStatus === 'Resolved') {
+      setResolvingIssueId(id);
+      return;
+    }
+
     try {
       await fetch(`http://localhost:5000/api/issues/${id}/status`, {
         method: 'PATCH',
@@ -48,28 +92,11 @@ export default function OfficialDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
-      {/* Admin Navbar */}
-      <nav className="sticky top-0 z-50 bg-indigo-900 text-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold tracking-tight">🏛️ CivicPulse</span>
-            <span className="ml-2 px-2.5 py-0.5 rounded-full bg-indigo-800 text-xs font-semibold uppercase tracking-wider text-indigo-200 hidden sm:inline-block">
-              Official Portal
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium hidden sm:inline-block">Corporator Ramesh</span>
-            <div className="w-8 h-8 bg-indigo-700 rounded-full flex items-center justify-center border border-indigo-500">
-              <span className="text-sm">🏛️</span>
-            </div>
-          </div>
-        </div>
-      </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Ward 4 Command Center</h1>
-          <p className="text-slate-500 mt-1">Manage and resolve authenticated civic grievances.</p>
+          <h1 className="text-2xl font-bold text-slate-900">{currentUser?.location || 'Regional'} Command Center</h1>
+          <p className="text-slate-500 mt-1">Manage and resolve authenticated civic grievances for {currentUser?.location || 'your region'}.</p>
         </div>
 
         {/* Analytics Cards */}
@@ -178,6 +205,48 @@ export default function OfficialDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Resolution Evidence Modal */}
+      {resolvingIssueId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col p-6 relative border border-slate-200">
+            <button 
+              onClick={() => { setResolvingIssueId(null); setEvidenceFile(null); }}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors font-bold"
+            >
+              ✕
+            </button>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Upload Proof of Resolution</h2>
+            <p className="text-sm text-slate-500 mb-6">Photographic evidence is required to mark an issue as Resolved and notify citizens.</p>
+            
+            <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center min-h-[200px] mb-6 relative overflow-hidden bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer">
+              {evidenceFile ? (
+                <img src={evidenceFile} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <>
+                  <Camera className="w-10 h-10 text-slate-400 mb-3" />
+                  <span className="text-sm font-medium text-slate-600 mb-1">Click to upload photo</span>
+                  <span className="text-xs text-slate-400">JPG, PNG up to 10MB</span>
+                </>
+              )}
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileChange} 
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </div>
+
+            <button
+              onClick={submitResolution}
+              disabled={!evidenceFile}
+              className={`w-full py-3 rounded-xl font-bold transition-all shadow-md ${evidenceFile ? 'bg-indigo-600 hover:bg-indigo-500 text-white active:scale-[0.98]' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+            >
+              Submit Resolution
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

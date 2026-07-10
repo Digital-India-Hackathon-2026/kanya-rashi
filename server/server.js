@@ -44,7 +44,7 @@ app.post('/api/issues', (req, res) => {
 // PATCH /api/issues/:id/status: Updates status and returns the updated issue
 app.patch('/api/issues/:id/status', (req, res) => {
   const issueId = parseInt(req.params.id, 10);
-  const { status } = req.body;
+  const { status, resolutionEvidence } = req.body;
   
   const issueIndex = issuesDB.findIndex(issue => issue.id === issueId);
   
@@ -54,6 +54,10 @@ app.patch('/api/issues/:id/status', (req, res) => {
   
   if (status) {
     issuesDB[issueIndex].status = status;
+  }
+
+  if (resolutionEvidence) {
+    issuesDB[issueIndex].resolutionEvidence = resolutionEvidence;
   }
   
   res.json(issuesDB[issueIndex]);

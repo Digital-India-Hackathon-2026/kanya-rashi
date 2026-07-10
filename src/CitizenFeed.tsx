@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Trophy, Map } from 'lucide-react';
+import { Flame, Trophy, Map, CheckCircle } from 'lucide-react';
 import ReportModal from './ReportModal';
 
 interface Issue {
@@ -10,6 +10,7 @@ interface Issue {
   status: string;
   upvotes: number;
   image?: string;
+  resolutionEvidence?: string;
 }
 
 interface CitizenFeedProps {
@@ -184,6 +185,19 @@ export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFe
                         <img 
                           src={issue.image} 
                           alt="Issue verification" 
+                          className="w-full h-48 md:h-64 object-cover hover:scale-105 transition-transform duration-500"
+                        />
+                      </div>
+                    )}
+                    
+                    {issue.status === 'Resolved' && issue.resolutionEvidence && (
+                      <div className="mt-4 rounded-xl overflow-hidden shadow-sm border-2 border-emerald-500 relative">
+                        <div className="absolute top-3 left-3 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md z-10 flex items-center gap-1.5 backdrop-blur-sm bg-emerald-500/90 border border-emerald-400">
+                          <CheckCircle className="w-3.5 h-3.5" /> Official Resolution Proof
+                        </div>
+                        <img 
+                          src={issue.resolutionEvidence} 
+                          alt="Official Resolution Proof" 
                           className="w-full h-48 md:h-64 object-cover hover:scale-105 transition-transform duration-500"
                         />
                       </div>
