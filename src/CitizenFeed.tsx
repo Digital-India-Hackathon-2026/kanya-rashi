@@ -14,7 +14,7 @@ export default function CitizenFeed() {
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-24 relative">
       {/* Internal Navbar */}
       <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xl font-bold tracking-tight">🏛️ CivicPulse</span>
           </div>
@@ -32,9 +32,10 @@ export default function CitizenFeed() {
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-4 pt-8">
-        {/* Mobile Ward Badge (shows only on small screens) */}
-        <div className="flex sm:hidden justify-center mb-6">
+      <main className="max-w-6xl mx-auto px-4 pt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          {/* Mobile Ward Badge (shows only on small screens) */}
+          <div className="flex sm:hidden justify-center mb-6">
           <span className="px-3 py-1 bg-emerald-100 text-emerald-800 text-sm font-semibold rounded-full flex items-center gap-1 shadow-sm">
             <span>📍</span> Ghatkesar Ward 4
           </span>
@@ -115,15 +116,104 @@ export default function CitizenFeed() {
             );
           })}
         </div>
-      </main>
+        
+        {/* Report Issue Button (Moved inside left column) */}
+        <div className="mt-8 flex justify-center sm:justify-start">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="px-6 py-4 bg-emerald-600 text-white font-bold rounded-full shadow-xl hover:shadow-2xl hover:bg-emerald-500 hover:scale-105 transition-all active:scale-95 flex items-center gap-2 focus:outline-none focus:ring-4 focus:ring-emerald-500/30"
+          >
+            <span className="text-xl leading-none">➕</span> REPORT NEW ISSUE
+          </button>
+        </div>
+      </div>
 
-      {/* Floating Action Button (FAB) */}
-      <button 
-        onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-8 right-8 px-6 py-4 bg-emerald-600 text-white font-bold rounded-full shadow-xl hover:shadow-2xl hover:bg-emerald-500 hover:scale-105 transition-all active:scale-95 flex items-center gap-2 z-40 focus:outline-none focus:ring-4 focus:ring-emerald-500/30"
-      >
-        <span className="text-xl leading-none">➕</span> REPORT NEW ISSUE
-      </button>
+      {/* Local Pulse Sidebar */}
+      <div className="lg:col-span-1">
+        <div className="sticky top-24 space-y-6">
+          {/* Section A: Ward Statistics */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              Ghatkesar Ward 4 Pulse
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </span>
+            </h3>
+            
+            <div className="space-y-5">
+              <div>
+                <div className="flex justify-between items-end mb-2">
+                  <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Resolution Rate</span>
+                  <span className="text-2xl font-black text-emerald-600">78%</span>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-2.5">
+                  <div className="bg-emerald-500 h-2.5 rounded-full" style={{ width: '78%' }}></div>
+                </div>
+              </div>
+              
+              <div>
+                <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider block mb-1">Active Citizens</span>
+                <span className="text-lg font-bold text-slate-800">1,204 engaged this week</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section B: Trending Critical Issues */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <span>🔥</span> Highest Upvoted (Needs Action)
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="border border-red-100 bg-red-50/30 rounded-lg p-4">
+                <h4 className="font-bold text-slate-900 leading-tight mb-2">Main Approach Road Potholes</h4>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full mb-2">
+                  <span>▲</span> 842 Upvotes
+                </div>
+                <p className="text-xs font-semibold text-red-600">Warning: Reaching critical mass for Ward 4 representative.</p>
+              </div>
+
+              <div className="border border-slate-100 rounded-lg p-4 hover:border-slate-200 transition-colors">
+                <h4 className="font-bold text-slate-900 leading-tight mb-2">Streetlights out on 3rd Cross</h4>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">
+                  <span>▲</span> 512 Upvotes
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section C: Top Contributors */}
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
+            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <span>🏆</span> Campus Civic Leaders
+            </h3>
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 font-bold flex items-center justify-center text-sm">
+                    R
+                  </div>
+                  <span className="font-bold text-slate-800">Rahul K.</span>
+                </div>
+                <span className="font-black text-emerald-600 text-sm">450 pts</span>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold flex items-center justify-center text-sm">
+                    P
+                  </div>
+                  <span className="font-bold text-slate-800">Priya M.</span>
+                </div>
+                <span className="font-black text-emerald-600 text-sm">320 pts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </main>
 
       <ReportModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
