@@ -5,7 +5,7 @@ import Webcam from 'react-webcam';
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { title: string; category: string; description: string }) => void;
+  onSubmit: (data: { title: string; category: string; description: string; image: string | null }) => void;
 }
 
 export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
@@ -15,7 +15,7 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
   const [description, setDescription] = useState('');
 
   const handleFormSubmit = () => {
-    onSubmit({ title, category, description });
+    onSubmit({ title, category, description, image: capturedImage });
     setCategory('');
     setTitle('');
     setDescription('');

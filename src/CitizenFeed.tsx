@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Trophy } from 'lucide-react';
+import { Flame, Trophy, Map } from 'lucide-react';
 import ReportModal from './ReportModal';
 
 interface Issue {
@@ -9,9 +9,14 @@ interface Issue {
   location: string;
   status: string;
   upvotes: number;
+  image?: string;
 }
 
-export default function CitizenFeed() {
+interface CitizenFeedProps {
+  location?: string;
+}
+
+export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFeedProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [issues, setIssues] = useState<Issue[]>([]);
 
@@ -38,7 +43,7 @@ export default function CitizenFeed() {
     }
   };
 
-  const handleSubmitIssue = async (data: { title: string; category: string; description: string }) => {
+  const handleSubmitIssue = async (data: { title: string; category: string; description: string; image: string | null }) => {
     try {
       await fetch('http://localhost:5000/api/issues', {
         method: 'POST',
@@ -47,7 +52,8 @@ export default function CitizenFeed() {
           title: data.title,
           category: data.category,
           description: data.description,
-          location: "SNIST Campus / Ghatkesar Ward 4",
+          image: data.image,
+          location: location,
           status: "Pending",
           upvotes: 0
         })
@@ -65,21 +71,19 @@ export default function CitizenFeed() {
   
   const highestUpvotedIssue = totalIssues > 0 ? [...issues].sort((a, b) => b.upvotes - a.upvotes)[0] : null;
 
+  const alienatedVoters = issues
+    .filter(issue => issue.status !== 'Resolved')
+    .reduce((sum, issue) => sum + issue.upvotes, 0);
+
   return (
-    <div className="bg-slate-50 font-sans text-slate-900 pb-24 relative min-h-screen">
+    <div className="bg-gradient-to-br from-slate-50 to-slate-100 font-sans text-slate-900 pb-24 relative min-h-screen">
       
       {/* User contextual header */}
       <div className="bg-white border-b border-slate-200 py-3 shadow-sm mb-8">
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between sm:justify-end gap-4">
+        <div className="max-w-7xl mx-auto px-4 flex items-center">
           <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
             <span className="text-sm">📍</span>
-            <span className="text-xs font-bold text-emerald-800">Ghatkesar Ward 4</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200">
-              <span className="text-xs">👤</span>
-            </div>
-            <span className="text-sm font-bold text-slate-700">Citizen A</span>
+            <span className="text-xs font-bold text-emerald-800">{location}</span>
           </div>
         </div>
       </div>
@@ -99,7 +103,7 @@ export default function CitizenFeed() {
                 <p className="text-red-600/80 text-sm mt-1 font-medium">Accumulated unresolved grievances.</p>
               </div>
               <div className="text-left sm:text-right">
-                <span className="block text-4xl font-extrabold text-red-600 tracking-tight leading-none">142</span>
+                <span className="block text-4xl font-extrabold text-red-600 tracking-tight leading-none">{alienatedVoters}</span>
                 <span className="block text-xs font-bold text-red-500 uppercase mt-1">Voters Alienated</span>
               </div>
             </div>
@@ -119,11 +123,22 @@ export default function CitizenFeed() {
 
             {/* Issue Cards */}
             <div className="space-y-4">
-              {issues.map((issue) => {
-                let borderClass = '';
-                let ButtonComponent;
+              {issues.length === 0 ? (
+                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-16 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+                  <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mb-6 border border-emerald-100">
+                    <Map className="w-10 h-10 text-emerald-500" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">All clear!</h3>
+                  <p className="text-slate-500 max-w-md text-base leading-relaxed">
+                    No issues reported yet. Be the first to make a difference in your community by reporting an issue.
+                  </p>
+                </div>
+              ) : (
+                issues.map((issue) => {
+                  let borderClass = '';
+                  let ButtonComponent;
 
-                if (issue.status === 'Pending') {
+                  if (issue.status === 'Pending') {
                   borderClass = 'border-red-500';
                   ButtonComponent = (
                     <button 
@@ -164,9 +179,18 @@ export default function CitizenFeed() {
                         {ButtonComponent}
                       </div>
                     </div>
+                    {issue.image && (
+                      <div className="mt-4 rounded-xl overflow-hidden shadow-sm border border-slate-100">
+                        <img 
+                          src={issue.image} 
+                          alt="Issue verification" 
+                          className="w-full h-48 md:h-64 object-cover hover:scale-105 transition-transform duration-500"
+                        />
+                      </div>
+                    )}
                   </div>
                 );
-              })}
+              }))}
             </div>
           </div>
 
@@ -174,10 +198,10 @@ export default function CitizenFeed() {
           <div className="lg:col-span-1 space-y-6">
             
             {/* Section A: Ward Statistics */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-1">
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-                <h3 className="font-bold text-slate-900">Ghatkesar Ward 4 Pulse</h3>
+                <h3 className="font-bold text-slate-900">Local Pulse</h3>
               </div>
               
               <div className="space-y-5">
@@ -201,7 +225,7 @@ export default function CitizenFeed() {
             </div>
 
             {/* Section B: Trending Critical Issues */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-1">
               <div className="flex items-center gap-2 mb-4">
                 <Flame className="w-5 h-5 text-red-500" />
                 <h3 className="font-bold text-slate-900">Highest Upvoted</h3>
@@ -227,47 +251,20 @@ export default function CitizenFeed() {
               </div>
             </div>
 
-            {/* Section C: Top Contributors */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Trophy className="w-5 h-5 text-amber-500" />
-                <h3 className="font-bold text-slate-900">Campus Civic Leaders</h3>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs shadow-sm">
-                      RK
-                    </div>
-                    <span className="font-bold text-slate-700 text-sm">Rahul K.</span>
-                  </div>
-                  <span className="font-bold text-emerald-600 text-sm">450 pts</span>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs shadow-sm">
-                      PM
-                    </div>
-                    <span className="font-bold text-slate-700 text-sm">Priya M.</span>
-                  </div>
-                  <span className="font-bold text-indigo-600 text-sm">320 pts</span>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
       </main>
 
       {/* Floating Action Button (FAB) */}
-      <button 
-        onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-8 right-8 px-6 py-4 bg-emerald-600 text-white font-bold rounded-full shadow-xl hover:shadow-2xl hover:bg-emerald-500 hover:scale-105 transition-all active:scale-95 flex items-center gap-2 z-40 focus:outline-none focus:ring-4 focus:ring-emerald-500/30"
-      >
-        <span className="text-xl leading-none">➕</span> REPORT NEW ISSUE
-      </button>
+      <div className="fixed bottom-8 right-8 z-40 flex items-center justify-center group">
+        <div className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-25 group-hover:opacity-40 transition-opacity duration-300"></div>
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="relative px-6 py-4 bg-emerald-600 text-white font-bold rounded-full shadow-xl hover:shadow-2xl hover:bg-emerald-500 hover:scale-105 transition-all duration-300 active:scale-95 flex items-center gap-2 focus:outline-none focus:ring-4 focus:ring-emerald-500/50"
+        >
+          <span className="text-xl leading-none">➕</span> REPORT NEW ISSUE
+        </button>
+      </div>
 
       <ReportModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleSubmitIssue} />
     </div>

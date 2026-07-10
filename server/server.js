@@ -6,7 +6,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
-app.use(express.json()); // Essential for parsing JSON request bodies
+app.use(express.json({ limit: '10mb' })); // Essential for parsing JSON request bodies, increased limit for base64 images
 
 // In-Memory Database (Hackathon Speed)
 let issuesDB = [];
@@ -24,7 +24,7 @@ app.get('/api/issues', (req, res) => {
 
 // POST /api/issues: Accepts a new issue object, adds it, and returns it
 app.post('/api/issues', (req, res) => {
-  const { title, category, location, description } = req.body;
+  const { title, category, location, description, image } = req.body;
   
   const newIssue = {
     id: nextId++,
@@ -32,6 +32,7 @@ app.post('/api/issues', (req, res) => {
     category: category || 'General',
     location: location || 'SNIST Campus / Ghatkesar', // Defaulting to our geofenced area for the demo
     description: description || '',
+    image: image || null,
     status: 'Pending',
     upvotes: 1
   };

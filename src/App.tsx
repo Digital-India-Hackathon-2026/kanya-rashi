@@ -1,26 +1,35 @@
 import React, { useState } from 'react';
-import { MapPin, Camera, AlertTriangle, Building, LogOut, User, Shield } from 'lucide-react';
+import { MapPin, Camera, AlertTriangle, Building, LogOut, User, Shield, ChevronDown } from 'lucide-react';
+
+interface UserData {
+  name: string;
+  email: string;
+  role: 'citizen' | 'official';
+  location?: string;
+}
 import CitizenFeed from './CitizenFeed';
 import OfficialDashboard from './OfficialDashboard';
+import LoginModal from './Login';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState<'citizen' | 'official' | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
+  const [loginAttemptRole, setLoginAttemptRole] = useState<'citizen' | 'official' | null>(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  const handleLogin = (role: 'citizen' | 'official') => {
-    setIsLoggedIn(true);
-    setUserRole(role);
+  const handleAuthSuccess = (userData: UserData) => {
+    setCurrentUser(userData);
+    setLoginAttemptRole(null);
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUserRole(null);
+    setCurrentUser(null);
+    setShowProfileMenu(false);
   };
 
   // ------------------------------------------------------------------
   // LOGGED IN VIEW (Global Nav + Role Dashboard)
   // ------------------------------------------------------------------
-  if (isLoggedIn) {
+  if (currentUser) {
     return (
       <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
         {/* Global Navigation Bar */}
@@ -30,20 +39,49 @@ function App() {
               <Building className="w-6 h-6 text-slate-700" />
               <span className="text-xl font-bold tracking-tight">CivicPulse</span>
             </div>
-            <button 
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
+            
+            <div className="relative">
+              <button 
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-2 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors focus:outline-none"
+              >
+                <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200">
+                  <span className="text-sm">👤</span>
+                </div>
+                <span className="text-sm font-bold text-slate-700 capitalize">{currentUser.name}</span>
+                <ChevronDown className="w-4 h-4 text-slate-500" />
+              </button>
+              
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 border border-slate-200 z-50">
+                  <div className="px-4 py-2 border-b border-slate-100">
+                    <p className="text-sm font-medium text-slate-900 truncate capitalize">{currentUser.name}</p>
+                    <p className="text-xs text-slate-500 truncate">{currentUser.email}</p>
+                  </div>
+                  <div className="px-4 py-2 border-b border-slate-100">
+                    <p className="text-xs text-slate-500">Role: <span className="font-semibold capitalize text-slate-700">{currentUser.role}</span></p>
+                    {currentUser.role === 'citizen' && (
+                      <p className="text-xs text-slate-500 mt-1 truncate">Loc: <span className="font-semibold text-slate-700">{currentUser.location}</span></p>
+                    )}
+                  </div>
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+
           </div>
         </nav>
 
         {/* Main Content Area */}
         <div className="pt-16">
-          {userRole === 'citizen' && <CitizenFeed />}
-          {userRole === 'official' && <OfficialDashboard />}
+          {currentUser.role === 'citizen' && <CitizenFeed location={currentUser.location} />}
+          {currentUser.role === 'official' && <OfficialDashboard />}
         </div>
       </div>
     );
@@ -87,14 +125,14 @@ function App() {
           {/* Role-Based Login Buttons (Replaces previous CTA) */}
           <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button 
-              onClick={() => handleLogin('citizen')}
+              onClick={() => setLoginAttemptRole('citizen')}
               className="flex items-center justify-center gap-3 px-8 py-4 text-base font-bold text-white bg-emerald-600 rounded-full hover:bg-emerald-500 active:scale-95 transition-all shadow-xl hover:shadow-emerald-500/20"
             >
               <User className="w-5 h-5" />
               Login as Citizen
             </button>
             <button 
-              onClick={() => handleLogin('official')}
+              onClick={() => setLoginAttemptRole('official')}
               className="flex items-center justify-center gap-3 px-8 py-4 text-base font-bold text-white bg-indigo-600 rounded-full hover:bg-indigo-500 active:scale-95 transition-all shadow-xl hover:shadow-indigo-500/20"
             >
               <Shield className="w-5 h-5" />
@@ -102,6 +140,14 @@ function App() {
             </button>
           </div>
         </section>
+
+        {loginAttemptRole && (
+          <LoginModal 
+            role={loginAttemptRole}
+            onClose={() => setLoginAttemptRole(null)}
+            onSuccess={handleAuthSuccess}
+          />
+        )}
 
         {/* How It Works Section */}
         <section className="bg-slate-50 py-24 sm:py-32">
