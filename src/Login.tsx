@@ -1,454 +1,176 @@
 import React, { useState } from 'react';
-import { ChevronDown, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react';
-import { supabase } from './supabaseClient';
+import { Mail, Lock, Shield, MapPin, ArrowLeft } from 'lucide-react';
 
-interface LoginProps {
-  onLogin: (role: 'citizen' | 'official' | 'admin', wardId: string, userName: string, userId?: string) => void;
-  initialMode?: 'signin' | 'signup' | 'forgot' | 'reset' | 'expired';
+interface UserData {
+  name: string;
+  email: string;
+  role: 'citizen' | 'official';
+  location?: string;
 }
 
-export default function Login({ onLogin, initialMode = 'signin' }: LoginProps) {
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot' | 'reset' | 'expired' | 'verification-sent'>(initialMode);
-  
-  // Form fields
+interface LoginModalProps {
+  role: 'citizen' | 'official';
+  onClose: () => void;
+  onSuccess: (userData: UserData) => void;
+}
+
+export default function LoginModal({ role, onClose, onSuccess }: LoginModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [location, setLocation] = useState('Ghatkesar Ward 4');
+  const [adminBadge, setAdminBadge] = useState('');
+  const [error, setError] = useState('');
 
-  // Loading & State messages
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-
-  const [demoSelection, setDemoSelection] = useState('citizen-a');
-
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password) {
-      setErrorMsg('Please enter both email and password.');
+    if (!email || !password) {
+      setError('Please fill out all required fields.');
       return;
     }
-    setErrorMsg('');
-    setLoading(true);
+    
+    if (role === 'official' && !adminBadge) {
+      setError('Official Admin Badge ID is required.');
+      return;
+    }
 
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        
-        if (error) {
-          setErrorMsg(error.message);
-        } else if (data?.user) {
-          setSuccessMsg('Successfully signed in!');
-          // The auth state listener in App.tsx will trigger the profile fetch and feed redirect.
-        }
-      } catch (err: any) {
-        setErrorMsg(err.message || 'An unexpected error occurred.');
-      } finally {
-        setLoading(false);
+    const name = email.split('@')[0] || 'User';
+
+    // Mock validation success for hackathon
+    onSuccess({
+      name,
+      email,
+      role,
+      location: location
+    });
+  };
+
+  const isCitizen = role === 'citizen';
+  
+  // Safe mapping for Tailwind class extraction
+  const colorClasses = isCitizen 
+    ? {
+        bg: 'bg-emerald-600',
+        hoverBg: 'hover:bg-emerald-500',
+        focusRing: 'focus:ring-emerald-500',
+        focusRingLight: 'focus:ring-emerald-500/20',
+        focusBorder: 'focus:border-emerald-500',
       }
-    } else {
-      setErrorMsg('Supabase client is not initialized.');
-      setLoading(false);
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !password || !confirmPassword) {
-      setErrorMsg('All fields are required.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setErrorMsg('Passwords do not match.');
-      return;
-    }
-    if (password.length < 6) {
-      setErrorMsg('Password must be at least 6 characters.');
-      return;
-    }
-    setErrorMsg('');
-    setLoading(true);
-
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: email.split('@')[0] // default fallback
-            }
-          }
-        });
-
-        if (error) {
-          setErrorMsg(error.message);
-        } else if (data?.user) {
-          // Check if email confirmation is required
-          if (data.session) {
-            setSuccessMsg('Successfully registered!');
-          } else {
-            setMode('verification-sent');
-          }
-        }
-      } catch (err: any) {
-        setErrorMsg(err.message || 'An unexpected error occurred.');
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      setErrorMsg('Supabase client is not initialized.');
-      setLoading(false);
-    }
-  };
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) {
-      setErrorMsg('Please enter your email address.');
-      return;
-    }
-    setErrorMsg('');
-    setLoading(true);
-
-    if (supabase) {
-      try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/#reset`
-        });
-
-        if (error) {
-          setErrorMsg(error.message);
-        } else {
-          setSuccessMsg('Password reset link has been sent to your email.');
-          setEmail('');
-        }
-      } catch (err: any) {
-        setErrorMsg(err.message || 'An unexpected error occurred.');
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      setErrorMsg('Supabase client is not initialized.');
-      setLoading(false);
-    }
-  };
-
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!password) {
-      setErrorMsg('Please enter a new password.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setErrorMsg('Passwords do not match.');
-      return;
-    }
-    setErrorMsg('');
-    setLoading(true);
-
-    if (supabase) {
-      try {
-        const { error } = await supabase.auth.updateUser({
-          password: password
-        });
-
-        if (error) {
-          setErrorMsg(error.message);
-        } else {
-          setSuccessMsg('Password has been reset successfully!');
-          setTimeout(() => {
-            setMode('signin');
-            setPassword('');
-            setConfirmPassword('');
-          }, 2000);
-        }
-      } catch (err: any) {
-        setErrorMsg(err.message || 'An unexpected error occurred.');
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      setErrorMsg('Supabase client is not initialized.');
-      setLoading(false);
-    }
-  };
-
-  // Demo Switcher changes (retained existing hackathon functionality)
-  const handleDemoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    setDemoSelection(val);
-    if (val === 'citizen-a') {
-      onLogin('citizen', 'ghatkesar-4', 'Citizen A', '11111111-1111-1111-1111-111111111111');
-    } else if (val === 'corporator-ramesh') {
-      onLogin('official', 'ghatkesar-4', 'Corporator Ramesh', '22222222-2222-2222-2222-222222222222');
-    }
-  };
+    : {
+        bg: 'bg-indigo-600',
+        hoverBg: 'hover:bg-indigo-500',
+        focusRing: 'focus:ring-indigo-500',
+        focusRingLight: 'focus:ring-indigo-500/20',
+        focusBorder: 'focus:border-indigo-500',
+      };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans text-slate-900">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100 flex flex-col">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col relative">
         
-        {/* Main Card Content */}
-        <div className="p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-50 mb-4 border border-emerald-100/50 shadow-sm">
-              <span className="text-3xl">🏛️</span>
-            </div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-              {mode === 'signin' && 'Sign In to CivicPulse'}
-              {mode === 'signup' && 'Create Your Account'}
-              {mode === 'forgot' && 'Reset Your Password'}
-              {mode === 'reset' && 'Enter New Password'}
-              {mode === 'expired' && 'Session Expired'}
-              {mode === 'verification-sent' && 'Verify Your Email'}
-            </h1>
-            <p className="text-sm text-slate-500 mt-2">
-              {mode === 'signin' && 'Access your hyper-local governance community feed.'}
-              {mode === 'signup' && 'Join your community to report and upvote issues.'}
-              {mode === 'forgot' && "We'll send you a recovery link to your inbox."}
-              {mode === 'reset' && 'Create a strong, secure password for your account.'}
-              {mode === 'expired' && 'Please sign in again to continue.'}
-              {mode === 'verification-sent' && 'Account confirmation link sent.'}
-            </p>
+        {/* Header */}
+        <div className={`px-6 py-8 text-center text-white ${colorClasses.bg} relative overflow-hidden`}>
+          <div className="absolute inset-0 bg-black/10"></div>
+          <button 
+            onClick={onClose} 
+            className="absolute top-4 left-4 p-2 text-white/80 hover:text-white hover:bg-black/10 rounded-full transition-colors z-10"
+            title="Back to Selection"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          
+          <div className="w-16 h-16 mx-auto bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4 border border-white/30 shadow-inner">
+            {isCitizen ? <MapPin className="w-8 h-8" /> : <Shield className="w-8 h-8" />}
           </div>
+          <h2 className="text-2xl font-bold tracking-tight relative z-10">
+            {isCitizen ? 'Citizen Portal' : 'Official Portal'}
+          </h2>
+          <p className="text-white/80 mt-1 text-sm relative z-10">
+            {isCitizen ? 'Secure your community.' : 'Access your administrative dashboard.'}
+          </p>
+        </div>
 
-          {/* Feedback Messages */}
-          {errorMsg && (
-            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-sm text-red-600 flex items-start gap-2.5 animate-in fade-in slide-in-from-top-2 duration-300">
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>{errorMsg}</span>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-100 text-red-600 rounded-lg text-sm font-medium text-center">
+              {error}
             </div>
           )}
 
-          {successMsg && (
-            <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-sm text-emerald-700 flex items-start gap-2.5 animate-in fade-in slide-in-from-top-2 duration-300">
-              <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>{successMsg}</span>
-            </div>
-          )}
-
-          {/* Views */}
-          {mode === 'verification-sent' && (
-            <div className="text-center space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl text-sm text-emerald-800 leading-relaxed">
-                Check your email inbox for a confirmation link to activate your CivicPulse account. After clicking, you will be redirected to complete your profile setup.
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-slate-400" />
               </div>
-              <button 
-                onClick={() => setMode('signin')}
-                className="w-full flex items-center justify-center gap-2 text-sm font-bold text-slate-600 hover:text-slate-800 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back to Sign In</span>
-              </button>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 ${colorClasses.focusBorder} focus:outline-none focus:ring-2 ${colorClasses.focusRingLight} shadow-sm transition-all`}
+                placeholder="you@example.com"
+              />
             </div>
-          )}
-
-          {mode === 'expired' && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <button
-                onClick={() => setMode('signin')}
-                className="w-full px-4 py-3 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-500 transition-all shadow-md"
-              >
-                Sign In Again
-              </button>
-            </div>
-          )}
-
-          {(mode === 'signin' || mode === 'signup' || mode === 'forgot' || mode === 'reset') && (
-            <form onSubmit={
-              mode === 'signin' ? handleSignIn : 
-              mode === 'signup' ? handleSignUp : 
-              mode === 'forgot' ? handleForgotPassword : 
-              handleResetPassword
-            } className="space-y-5">
-              
-              {/* Email (not on reset page) */}
-              {mode !== 'reset' && (
-                <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-semibold text-slate-700">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="email"
-                      type="email"
-                      required
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm transition-all"
-                    />
-                    <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
-                  </div>
-                </div>
-              )}
-
-              {/* Password (for signin, signup, reset) */}
-              {mode !== 'forgot' && (
-                <div className="space-y-2">
-                  <label htmlFor="password" className="block text-sm font-semibold text-slate-700">
-                    {mode === 'reset' ? 'New Password' : 'Password'}
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm transition-all"
-                    />
-                    <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 focus:outline-none"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Confirm Password (only on signup/reset) */}
-              {(mode === 'signup' || mode === 'reset') && (
-                <div className="space-y-2 animate-in fade-in duration-200">
-                  <label htmlFor="confirm-password" className="block text-sm font-semibold text-slate-700">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="confirm-password"
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm transition-all"
-                    />
-                    <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
-                  </div>
-                </div>
-              )}
-
-              {/* Remember Me / Forgot Password Links (only on signin) */}
-              {mode === 'signin' && (
-                <div className="flex items-center justify-between text-xs font-semibold">
-                  <label className="flex items-center gap-2 text-slate-600 select-none cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4"
-                    />
-                    <span>Remember Session</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode('forgot');
-                      setErrorMsg('');
-                      setSuccessMsg('');
-                    }}
-                    className="text-emerald-600 hover:text-emerald-500 transition-colors"
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
-              )}
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 px-4 text-base font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-500 active:scale-[0.98] transition-all shadow-md hover:shadow-lg focus:outline-none flex items-center justify-center gap-2"
-              >
-                {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                <span>
-                  {mode === 'signin' && 'Sign In'}
-                  {mode === 'signup' && 'Create Account'}
-                  {mode === 'forgot' && 'Send Recovery Email'}
-                  {mode === 'reset' && 'Reset Password'}
-                </span>
-              </button>
-            </form>
-          )}
-
-          {/* Toggle Signin/Signup */}
-          {mode === 'signin' && (
-            <p className="text-center text-sm text-slate-500 mt-6">
-              New to CivicPulse?{' '}
-              <button
-                onClick={() => {
-                  setMode('signup');
-                  setErrorMsg('');
-                  setSuccessMsg('');
-                }}
-                className="font-bold text-emerald-600 hover:text-emerald-500 transition-colors"
-              >
-                Sign Up
-              </button>
-            </p>
-          )}
-
-          {mode === 'signup' && (
-            <p className="text-center text-sm text-slate-500 mt-6">
-              Already have an account?{' '}
-              <button
-                onClick={() => {
-                  setMode('signin');
-                  setErrorMsg('');
-                  setSuccessMsg('');
-                }}
-                className="font-bold text-emerald-600 hover:text-emerald-500 transition-colors"
-              >
-                Sign In
-              </button>
-            </p>
-          )}
-
-          {(mode === 'forgot' || mode === 'reset') && (
-            <button
-              onClick={() => {
-                setMode('signin');
-                setErrorMsg('');
-                setSuccessMsg('');
-              }}
-              className="mt-6 w-full flex items-center justify-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Sign In</span>
-            </button>
-          )}
-        </div>
-
-        {/* Hackathon Override Toolbar (retained functionality for fast evaluation) */}
-        <div className="border-t border-slate-200 bg-blue-50/70 p-5 backdrop-blur-sm mt-auto">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">⚡</span>
-            <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">Fast Demo Switcher</span>
           </div>
-          <div className="relative">
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-slate-400" />
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 ${colorClasses.focusBorder} focus:outline-none focus:ring-2 ${colorClasses.focusRingLight} shadow-sm transition-all`}
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              {isCitizen ? 'Community Location' : 'Assigned Ward / District'}
+            </label>
             <select
-              className="w-full appearance-none rounded-lg border border-blue-200 bg-white/80 px-3 py-2 pr-10 text-sm font-medium text-blue-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm transition-colors"
-              value={demoSelection}
-              onChange={handleDemoChange}
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className={`w-full appearance-none px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 ${colorClasses.focusBorder} focus:outline-none focus:ring-2 ${colorClasses.focusRingLight} shadow-sm transition-all`}
             >
-              <option value="citizen-a">👤 Demo Citizen A (Ghatkesar)</option>
-              <option value="corporator-ramesh">🏛️ Demo Corporator Ramesh (Ghatkesar)</option>
+              <option value="Ghatkesar Ward 4">Ghatkesar Ward 4</option>
+              <option value="Malkajgiri Ward 2">Malkajgiri Ward 2</option>
+              <option value="Kapra Ward 1">Kapra Ward 1</option>
             </select>
-            <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-blue-500 pointer-events-none" />
           </div>
-        </div>
-        
+
+          {!isCitizen && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Official Admin Badge ID</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Shield className="h-5 w-5 text-slate-400" />
+                </div>
+                <input
+                  type="text"
+                  value={adminBadge}
+                  onChange={(e) => setAdminBadge(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 ${colorClasses.focusBorder} focus:outline-none focus:ring-2 ${colorClasses.focusRingLight} shadow-sm transition-all`}
+                  placeholder="e.g. AUTH-9021"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              className={`w-full px-4 py-3 text-base font-bold text-white ${colorClasses.bg} rounded-xl ${colorClasses.hoverBg} active:scale-[0.98] transition-all shadow-md focus:outline-none focus:ring-2 ${colorClasses.focusRing} focus:ring-offset-2`}
+            >
+              Sign In to {isCitizen ? 'Citizen Feed' : 'Dashboard'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

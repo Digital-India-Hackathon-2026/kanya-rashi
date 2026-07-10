@@ -5,21 +5,17 @@ import Webcam from 'react-webcam';
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onIssueReported: (newIssue: { title: string; category: string; description: string; latitude: number; longitude: number }) => void;
+  onSubmit: (data: { title: string; category: string; description: string; image: string | null }) => void;
 }
 
-export default function ReportModal({ isOpen, onClose, onIssueReported }: ReportModalProps) {
-  const [category, setCategory] = useState<string>('');
-  const [title, setTitle] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
-  
-  // Geolocation states
-  const [coords, setCoords] = useState<{ latitude: number; longitude: number }>({ latitude: 17.4483, longitude: 78.6882 }); // SNIST default
-  const [gpsVerified, setGpsVerified] = useState(false);
-  const [photoCaptured, setPhotoCaptured] = useState(false);
-
-  // Webcam states
+export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [photoCaptured, setPhotoCaptured] = useState(false);
+  const [category, setCategory] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [coords, setCoords] = useState({ latitude: 17.4482, longitude: 78.6885 });
+  const [gpsVerified, setGpsVerified] = useState(false);
   const webcamRef = useRef<Webcam>(null);
 
   const capture = useCallback(() => {
@@ -94,12 +90,11 @@ export default function ReportModal({ isOpen, onClose, onIssueReported }: Report
       return;
     }
 
-    onIssueReported({
+    onSubmit({
       title,
       category,
       description,
-      latitude: coords.latitude,
-      longitude: coords.longitude
+      image: capturedImage
     });
 
     onClose();
@@ -194,23 +189,18 @@ export default function ReportModal({ isOpen, onClose, onIssueReported }: Report
               <label htmlFor="category" className="block text-sm font-medium text-slate-700 mb-1.5">
                 Issue Category
               </label>
-              <div className="relative">
-                <select
-                  id="category"
-                  className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                >
-                  <option value="" disabled>Select a category...</option>
-                  <option value="road">🛣️ Road Damage / Potholes</option>
-                  <option value="water">🚰 Water Supply / Leakages</option>
-                  <option value="sanitation">🗑️ Sanitation / Garbage Dumping</option>
-                  <option value="electrical">⚡ Electrical / Street Lights</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                  <span className="text-xs">▼</span>
-                </div>
-              </div>
+              <select
+                id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
+              >
+                <option value="" disabled>Select a category...</option>
+                <option value="road">Road Damage</option>
+                <option value="water">Water Supply</option>
+                <option value="sanitation">Sanitation</option>
+                <option value="electrical">Electrical</option>
+              </select>
             </div>
 
             <div>
