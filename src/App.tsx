@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { MapPin, Camera, AlertTriangle, Building, LogOut, User, Shield, ChevronDown } from 'lucide-react';
+import CitizenFeed from './CitizenFeed';
+import OfficialDashboard from './OfficialDashboard';
+import LoginModal from './Login';
 
 interface UserData {
   name: string;
@@ -7,9 +10,6 @@ interface UserData {
   role: 'citizen' | 'official';
   location?: string;
 }
-import CitizenFeed from './CitizenFeed';
-import OfficialDashboard from './OfficialDashboard';
-import LoginModal from './Login';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);

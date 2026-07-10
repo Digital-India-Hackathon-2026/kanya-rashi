@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Flame, Trophy, Map, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import ReportModal from './ReportModal';
+import { CheckCircle, Map, Flame } from 'lucide-react';
 
 interface Issue {
   id: number;
