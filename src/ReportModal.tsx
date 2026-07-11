@@ -199,6 +199,7 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
               >
+                <option value="" disabled>Select a category...</option>
                 <option value="Road Damage">Road Damage</option>
                 <option value="Water Supply">Water Supply</option>
                 <option value="Sanitation">Sanitation</option>
