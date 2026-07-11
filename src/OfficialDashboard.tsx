@@ -90,9 +90,13 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
     }
   };
 
-  const totalReports = issues.length;
-  const pendingCount = issues.filter(issue => issue.status === 'Pending').length;
-  const resolvedCount = issues.filter(issue => issue.status === 'Resolved').length;
+  const localIssues = currentUser?.location 
+    ? issues.filter(issue => issue.location === currentUser.location)
+    : issues;
+
+  const totalReports = localIssues.length;
+  const pendingCount = localIssues.filter(issue => issue.status === 'Pending').length;
+  const resolvedCount = localIssues.filter(issue => issue.status === 'Resolved').length;
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
@@ -171,8 +175,21 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {issues.filter(issue => filterLevel === 'all' || (issue.escalation_level || 1) === filterLevel).map((issue) => (
-                  <tr key={issue.id} className="hover:bg-slate-50 transition-colors">
+                {localIssues.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-16 text-center bg-white">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                          <ClipboardList className="w-8 h-8 text-slate-400" />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-800 mb-1">All Clear!</h3>
+                        <p className="text-slate-500">No reports found for this jurisdiction.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  localIssues.filter(issue => filterLevel === 'all' || (issue.escalation_level || 1) === filterLevel).map((issue) => (
+                    <tr key={issue.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="font-medium text-slate-900">REP-{issue.id}</div>
                       <div className="text-xs text-slate-400 mt-1">Today</div>
@@ -239,7 +256,8 @@ export default function OfficialDashboard({ currentUser }: OfficialDashboardProp
                       </button>
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
