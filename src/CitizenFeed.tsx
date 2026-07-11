@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import ReportModal from './ReportModal';
 import { CheckCircle, Map, Flame } from 'lucide-react';
+import { supabase } from './supabase';
 
 interface Issue {
   id: number;
@@ -67,6 +68,31 @@ export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFe
 
   const handleSubmitIssue = async (data: { title: string; category: string; description: string; image: string | null }) => {
     try {
+      let finalImageUrl = data.image;
+
+      if (data.image && (data.image.startsWith('blob:') || data.image.startsWith('data:'))) {
+        const resBlob = await fetch(data.image);
+        const blob = await resBlob.blob();
+        const fileExt = blob.type.split('/')[1] || 'jpeg';
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `${currentUser.email}/${fileName}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('issues')
+          .upload(filePath, blob, { upsert: true });
+
+        if (uploadError) {
+          console.error('Supabase upload error:', uploadError);
+          throw uploadError;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('issues')
+          .getPublicUrl(uploadData.path);
+
+        finalImageUrl = publicUrlData.publicUrl;
+      }
+
       await fetch('https://kanya-rashi.onrender.com/api/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -74,7 +100,7 @@ export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFe
           title: data.title,
           category: data.category,
           description: data.description,
-          image: data.image,
+          image: finalImageUrl,
           location: location,
           status: "Pending",
           upvotes: 0
@@ -221,6 +247,11 @@ export default function CitizenFeed({ location = "Ghatkesar Ward 4" }: CitizenFe
                           <h3 className="text-xl font-bold text-slate-900 leading-tight">
                             {issue.title}
                           </h3>
+                          {issue.description && (
+                            <p className="mt-2 text-sm text-slate-600">
+                              {issue.description}
+                            </p>
+                          )}
                         </div>
                         <div className="flex-shrink-0">
                           {ButtonComponent}
