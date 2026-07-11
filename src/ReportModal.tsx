@@ -12,6 +12,7 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [photoCaptured, setPhotoCaptured] = useState(false);
   const [category, setCategory] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [coords, setCoords] = useState({ latitude: 17.4482, longitude: 78.6885 });
@@ -35,6 +36,7 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
     if (isOpen) {
       // Reset form states
       setCategory('');
+      setCustomCategory('');
       setTitle('');
       setDescription('');
       setPhotoCaptured(false);
@@ -77,8 +79,10 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
   };
 
   const handleSubmit = () => {
-    if (!category) {
-      alert('Please select an issue category.');
+    const finalCategory = category === 'other' ? customCategory.trim() : category;
+
+    if (!finalCategory) {
+      alert('Please select or enter an issue category.');
       return;
     }
     if (!title.trim()) {
@@ -92,7 +96,7 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
 
     onSubmit({
       title,
-      category,
+      category: finalCategory,
       description,
       image: capturedImage
     });
@@ -195,12 +199,23 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
               >
-                <option value="" disabled>Select a category...</option>
-                <option value="road">Road Damage</option>
-                <option value="water">Water Supply</option>
-                <option value="sanitation">Sanitation</option>
-                <option value="electrical">Electrical</option>
+                <option value="Road Damage">Road Damage</option>
+                <option value="Water Supply">Water Supply</option>
+                <option value="Sanitation">Sanitation</option>
+                <option value="Electrical">Electrical</option>
+                <option value="other">Other</option>
               </select>
+              {category === 'other' && (
+                <div className="mt-3 animate-in slide-in-from-top-2 duration-200">
+                  <input
+                    type="text"
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    placeholder="Enter custom category..."
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 shadow-sm"
+                  />
+                </div>
+              )}
             </div>
 
             <div>
